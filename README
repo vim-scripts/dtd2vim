@@ -1,0 +1,46 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=1462
+
+Script for creation XML data file for Vim7 XML omni-completion from DTDs
+Requires: perl and perlSGML (tested against 1997Sep18 version)
+
+INSTALLATION:
+
+   Copy into your $PATH
+
+USAGE:
+
+   dtd2vim <file.dtd> [<dialectname>]
+
+This command will create file <file.vim> (remove .dtd extension and add .vim;
+other extensions will remain intact).
+
+<dialectname> (not obligatory) will be part of dictionary name and will be
+used as argument for :XMLns command (file name - sans extensions) have to be
+the same.
+
+perlSGML and this script doesn't work with multiple files. User has to
+prepare single DTD file to parse all data.
+
+In created file global variable is named g:xmldata_<dialectname>. When second
+argument wasn't provided 'xxxx' will be used.
+After that place file in:
+
+   ~/.vim/autoload/xml
+
+directory. Of course it can be also global directory or other Vim data
+hierarchy of files. Example for  DocBook 4.4:
+DTD is in file docbook.dtd, call command with
+
+   dtd2vim.pl docbook.dtd docbook44
+
+Put file as:
+  
+   ~/.vim/autoload/xml/docbook44.vim
+
+ Omni-completion for DocBook 4.4 files will be started with:
+
+   :XMLns docbook44
+
+ command.
+
+
