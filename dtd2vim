@@ -10,7 +10,7 @@
 
 # USAGE:
 #
-#    dtd2vim.pl <file.dtd> [<dialectname>]
+#    dtd2vim <file.dtd> [<dialectname>]
 #
 # This command will create file <file.vim> (remove .dtd extension and add .vim;
 # other extensions will remain intact).
@@ -107,6 +107,9 @@ print DATA "let g:xmldata_$dialect = {\n";
 print DATA "\\ 'vimxmlentities': [$ents],\n";
 print DATA "\\ 'vimxmlroot': [$tops],\n";
 
+# Initialize tag info string
+$taginfo = '';
+
 @list_of_elements = $dtd->get_elements();
 foreach $element (@list_of_elements) {
 
@@ -121,6 +124,10 @@ foreach $element (@list_of_elements) {
 	$childs = "'" . $childs . "'";
 	$childs =~ s/'EMPTY'//;
 
+	if ( $childs =~ '^$') {
+		$taginfo .= "\\ '$element': ['/>', ''],\n";
+	}
+
 	print DATA "\\ '".$element."': [\n\\ [$childs],\n";
 
 	%element_attributes = $dtd->get_elem_attr($element);
@@ -133,6 +140,10 @@ foreach $element (@list_of_elements) {
 			if ($item !~ /(IMPLIED|FIXED|REQUIRED|CDATA|ID|ENTIT|NMTOKEN|NOTATION)/) {
 				# IDREF, IDREFS, NMTOKENS, ENTITIES will be cared of by super-strings
 				push @val, $item;
+			}
+			if ($item =~ /REQUIRED/) {
+				#push @req, $attr_name;
+				$req{$attr_name} = '1';
 			}
 		}
 		if (@val) {
@@ -148,8 +159,13 @@ foreach $element (@list_of_elements) {
 	print DATA "}\n\\ ],\n";
 }
 
+$req = join "': ['*', ''],\n\\ '", keys %req;
+$req = "\\ '" . $req . "': ['*', '']";
+print DATA "\\ 'vimxmlattrinfo': {\n$req\n\\ },\n";
+print DATA "\\ 'vimxmltaginfo': {\n$taginfo\\ }";
+
 # Close big dictionary and add modeline to data file
-print DATA "\\ }\n".'" vim:ft=vim:ff=unix';
+print DATA "\n\\ }\n\" vim:ft=vim:ff=unix";
 
 # Space necessary to get above line from default 'modelines' range
 #
@@ -158,4 +174,4 @@ print DATA "\\ }\n".'" vim:ft=vim:ff=unix';
 
 close DATA or die "$!";
 
-# vim:isk+=$,%:ft=perl:ff=unix
+# vim:isk+=$,%:ft=perl:ff=unix:tw=80:fo+=o:
