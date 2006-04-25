@@ -1,9 +1,9 @@
 #!/bin/env perl
 #
 # Author: Mikolaj Machowski ( mikmach AT wp DOT pl )
-# Version: 1.0
+# Version: 2.0
 # License: GPL v. 2
-# Date: 12 Feb 2006
+# Date: 25 Apr 2006
 #
 # Script for creation XML data file for Vim7 XML omni-completion from DTDs
 # Requires: perlSGML (tested against 1997Sep18 version)
@@ -45,6 +45,13 @@
 #  command.
 #
 # Potential problems: not always properly detected vimxmlroot.
+#
+# ChangeLog:
+# 1.1 (19 Apr)
+#     - commented out generation of * to mark required attributes - too many
+#     false positives
+#     - skip more DTD keywords: NAME, NUMBER
+
 
 # License:
 #  Copyright (C) 2006 Mikolaj Machowski <mikmach@wp.pl>
@@ -115,11 +122,25 @@ foreach $element (@list_of_elements) {
 
 	# Get possible childs of current element
 	@element_childs = $dtd->get_base_children($element);
+	@element_childs = (@element_childs, $dtd->get_inc_children($element));
+	@element_nochilds = $dtd->get_exc_children($element);
 	# Remove pcdata if first value of table
 	if ($element_childs[0] =~ /pcdata/) {
 		shift @element_childs;
 	}
-
+	foreach $child (@element_childs) {
+		$i = 0;
+		foreach $nochild (@element_nochilds) {
+			if ( $child eq $nochild ) {
+				$i = $i + 1;
+			}
+		}
+		if ( $i == 0 ) {
+			push @children, $child;
+		}
+	}
+	@element_childs = @children;
+	undef @children;
 	$childs = join "', '", @element_childs;
 	$childs = "'" . $childs . "'";
 	$childs =~ s/'EMPTY'//;
@@ -137,14 +158,14 @@ foreach $element (@list_of_elements) {
 	$attrs = '';
 	foreach $attr_name (@attr_names) {
 		foreach $item (@{$element_attributes{$attr_name}}) {
-			if ($item !~ /(IMPLIED|FIXED|REQUIRED|CDATA|ID|ENTIT|NMTOKEN|NOTATION)/) {
+			if ($item !~ /(IMPLIED|FIXED|REQUIRED|CDATA|ID|ENTIT|NAME|NUMBER|NMTOKEN|NOTATION)/) {
 				# IDREF, IDREFS, NMTOKENS, ENTITIES will be cared of by super-strings
 				push @val, $item;
 			}
-			if ($item =~ /REQUIRED/) {
+			#if ($item =~ /REQUIRED/) {
 				#push @req, $attr_name;
-				$req{$attr_name} = '1';
-			}
+				#$req{$attr_name} = '1';
+				#}
 		}
 		if (@val) {
 			$attr_vls = join "', '", @val;
@@ -159,9 +180,9 @@ foreach $element (@list_of_elements) {
 	print DATA "}\n\\ ],\n";
 }
 
-$req = join "': ['*', ''],\n\\ '", keys %req;
-$req = "\\ '" . $req . "': ['*', '']";
-print DATA "\\ 'vimxmlattrinfo': {\n$req\n\\ },\n";
+#$req = join "': ['*', ''],\n\\ '", keys %req;
+#$req = "\\ '" . $req . "': ['*', '']";
+#print DATA "\\ 'vimxmlattrinfo': {\n$req\n\\ },\n";
 print DATA "\\ 'vimxmltaginfo': {\n$taginfo\\ }";
 
 # Close big dictionary and add modeline to data file
